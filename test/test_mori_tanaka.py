@@ -96,13 +96,17 @@ def test_mt(random_complete_sym, inclusion_shape, manual_debug=False):
 
     if True:
         # This considers only coefficients in the upper left quadrant and the diagonal of the lower right quadrant
+        indices = list(zip(*[[i, j] for i in range(6) for j in range(6) if i <= j]))[:]
         interesting_indices = np.s_[
-            [0, 1, 2, 0, 0, 1, 3, 4, 5], [0, 1, 2, 1, 2, 2, 3, 4, 5]
+            # [0, 1, 2, 0, 0, 1, 3, 4, 5], [0, 1, 2, 1, 2, 2, 3, 4, 5]
+            list(indices[0]),
+            list(indices[1]),
         ]
         C_eff_homopy = C_eff_homopy[interesting_indices]
         C_eff_mechmean = C_eff_mechmean[interesting_indices]
 
-    coeffcient_difference_maximum = np.max(C_eff_homopy - C_eff_mechmean)
+    coeffcient_difference = C_eff_homopy - C_eff_mechmean
+    coeffcient_difference_maximum = np.max(coeffcient_difference)
     coefficient_maximum = np.max(C_eff_homopy)
     coefficient_minimum = np.min(C_eff_homopy)
 
@@ -127,20 +131,30 @@ def test_mt(random_complete_sym, inclusion_shape, manual_debug=False):
         )
     else:
 
-        return coeffcient_difference_maximum
+        return C_eff_homopy, C_eff_mechmean
 
 
 if __name__ == "__main__":
+    import pandas as pd
+
     # For detailed debugging, run this script, e.g. from ipython by "%run test/test_mori_tanaka.py"
 
     # Make it deterministic
     np.random.seed(16)
 
-    maxima = []
-    for i in range(1000):
+    tensors = []
+    for i in range(10):
         N4 = Sym_Fourth_Order_Special(label="complete")(np.random.rand(3, 3, 3, 3))
         maximum = test_mt(N4, inclusion_shape="sphere", manual_debug=True)
-        maxima.append(maximum)
+        tensors.append(maximum)
 
-    print(f"max(maxima) = {max(maxima)}")
-    print(f"mean(maxima) = {np.mean(maxima)}")
+    tensors = np.array(tensors).transpose([1, 0, 2])
+    for slice in [np.s_[:, 0:10], np.s_[:, 10:]]:
+        print("some more tensors coefficients")
+        for index, name in [(0, "homopy"), (1, "mechmean")]:
+            print(f"\n\nstatistics on {name} coefficients")
+            print(pd.DataFrame(tensors[index, :, :][slice]).describe())
+            np.argmax(tensors)
+
+    # print(f"max(maxima) = {max(maxima)}")
+    # print(f"mean(maxima) = {np.mean(maxima)}")
